@@ -2,30 +2,48 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import javax.swing.*;
 
 class Registration {
+    // Register a participant by appending their name to the corresponding webinar file.
     public static void registerParticipant(String webinar, String name) {
         try (FileWriter writer = new FileWriter(webinar + ".txt", true)) {
-            writer.write(name + "\n");
+            if (!name.isEmpty()) {
+                writer.write(name.trim() + "\n");
+                System.out.println("Successfully registered " + name + " for " + webinar);
+            } else {
+                System.out.println("No name provided.");
+            }
         } catch (IOException e) {
-            System.out.println("Error writing to file.");
+            System.out.println("Error writing to file: " + e.getMessage());
         }
     }
 
+    // Print participants by reading from the corresponding webinar file.
     public static void printParticipants(String webinar, JTextArea textArea) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(webinar + ".txt"))) {
+        File file = new File(webinar + ".txt");
+        if (!file.exists()) {
+            textArea.setText("No participants registered yet for " + webinar + ".");
+            return;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             StringBuilder sb = new StringBuilder();
             sb.append("Participants registered for ").append(webinar).append(":\n");
             while ((line = reader.readLine()) != null) {
                 sb.append(line).append("\n");
             }
+            if (sb.length() == ("Participants registered for " + webinar + ":\n").length()) {
+                sb.append("No participants found.\n");
+            }
             textArea.setText(sb.toString());
         } catch (IOException e) {
+            System.out.println("Error reading from file: " + e.getMessage());
             textArea.setText("Error reading from file.");
         }
     }
@@ -93,14 +111,26 @@ public class RegistrationSystem extends JFrame implements ActionListener {
         String webinar = webinarField.getText().trim().toLowerCase();
         String name = nameField.getText().trim();
 
+        System.out.println("Command: " + command);
+        System.out.println("Webinar: " + webinar);
+        System.out.println("Participant: " + name);
+
         switch (command) {
             case "Register":
-                Registration.registerParticipant(webinar, name);
-                textArea.setText("Participant " + name + " registered for " + webinar + ".");
-                clearFields();
+                if (!webinar.isEmpty() && !name.isEmpty()) {
+                    Registration.registerParticipant(webinar, name);
+                    textArea.setText("Participant " + name + " registered for " + webinar + ".");
+                    clearFields();
+                } else {
+                    textArea.setText("Please provide both webinar name and participant name.");
+                }
                 break;
             case "Print Participants":
-                Registration.printParticipants(webinar, textArea);
+                if (!webinar.isEmpty()) {
+                    Registration.printParticipants(webinar, textArea);
+                } else {
+                    textArea.setText("Please provide a webinar name.");
+                }
                 break;
         }
     }
